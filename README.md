@@ -154,6 +154,16 @@ nano ~/oc.sh
 chmod +x ~/oc.sh
 ```
 
+Et pour finir, il faut aussi indiquer au système que l'utilisation de "sudo" sur l'outil /usr/bin/nvidia-settings n'a pas besoin de se faire avec mot de passe pour l'utilisateur actuel :
+```
+sudo visudo
+```
+
+Et mettre en fin de fichier  (someuser est dans l'exemple le nom de l'utilisateur, à remplacer donc):
+```
+someuser ALL=(ALL) NOPASSWD: /usr/bin/nvidia-settings
+```
+
 ## Tester ?
 
 En lançant deux shells, vérifier à la fois l'état du mineur & l'execution du script.
