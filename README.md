@@ -112,8 +112,27 @@ EndSection
 A noter qu'il faut autant de bloc Section "Device" que de gpu (Identifier "DeviceX"). (idem concernant Screen)
 L'option "Coolbits" va permettre de règler les GPU avec les outils nvidia par la suite
 
-# Démarrage automatique du mineur
+# Installation de Circus si absent
 
+Circus est un programme de gestion de processus comme peut l'être systemd par exemple. Il possède l'avantage d'être extrêmement léger et simple de configuration.
+
+L'installation de se faisant par le python packet manager (en fonction des OS, ici Ubuntu):
+```
+#python < 3
+sudo apt-get install python-pip
+
+#python3+
+sudo apt-get install python3-pip
+```
+
+Puis l'installation de circus :
+```
+sudo pip install circus
+```
+
+Pour l'instant, Circus ne démarre pas automatiquement, dans les étapes suivantes, un fichier de configuration pour systemd sera écrit ainsi que tout le processus de démarrage du mineur choisi.
+
+# Démarrage automatique du mineur
 
 En créant & éditant le fichier /etc/circus/circus.ini :
 ```
