@@ -1,215 +1,115 @@
-# Documentation de RIG Nvidia Distributions standards
+# Documentation de RIG
 
 
-# Prérequis
+# Installation
 
-- drivers nvidia
-- cuda
-- binaires du mineur & fonctionnel
-- circusd (installé via pip3 de python)
-- xorg
+## System
 
-# Installation NVIDIA
+As experienced with recent versions, we will focus mainly on using Ubuntu 16.04 / 16.10 since, even without the security updates available now, it is far more easier to install the drivers and tools.
 
-L'installation de NVIDIA en passant par le fichier cuda*.run :
-```
-#installation du driver graphic uniquement - règle des soucis de compilation sans source kernel
-sudo ./NVIDIA-Linux-x86_64-*.run
+If you decide to install Ubuntu 17+, you can experience boot loop after NVidia/AMD drivers. You will then to change your `tty` to access the console "mode" only (and sufficient).
 
-# ne choisir que l'installation du toolkit nvidia
-sudo ./cuda-sapropreversion.run
-```
+`ctrl+alt+f1` for instance
+`ctrl+alt+f7` make you back to the GUI
 
-Ne pas oublier de
-## Erreur pour cause de serveur X lancé ?
+## Drivers
 
-Il vous suffit de stopper le service lightdm
+For NVidia drivers : [DRIVERS_NVIDIA.md](DRIVERS_NVIDIA.md)
 
-```
-sudo service lightdm stop
-```
+For AMD drivers : Please provide documentation
 
-## Erreur de version GCC
+## Miner
 
-Si un message du type "Error: unsupported compiler: X.X.X. Use --override to override this check.", il vous faut installer la version 4.9.0 par exemple :
+If you did not do it earlier, reboot your rig
+We won't focus on Overclocking here, just test the post-driver installation
+You'll need any miner you like <3. We will focus here on miners with monitoring APIs
 
-```
-#installation de gcc et g++
-sudo apt-get install gcc-4.9 g++-4.9
-```
+### Claymore's
 
+TODO documentation for Claymore
 
-Puis changer les alternatives pour utiliser par défaut la version 4.9
-```
-# effacer les alternatives pré/-existantes
-sudo update-alternatives --remove-all gcc
-sudo update-alternatives --remove-all g++
+### Ethminer
 
-# mettre par défaut la version 4.9
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 10
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 10
-```
-sudo update-alternatives --remove-all gcc
+TODO documentation for Ethminer
 
-# Compilation d'un mineur
+### CCMiner
 
-Ici je prend l'exemple de ccminer qui n'est pas très difficile à compiler manuellement.
+The doc is available [here](INSTALL_CCMINER.md)
 
-Exemple avec le repo https://github.com/krnlx/ccminer-skunk-krnlx
+# Virtual screen for your GPUs
 
-## Prérequis
+For NVidia : [VIRTUAL_SCREEN_NVIDIA.md](VIRTUAL_SCREEN_NVIDIA.md)
 
-Comme indiqué, il faut git, autoconf ainsi que les dépendances des bibliothèques openssl et curl. Par exemple via :
-```
-sudo apt-get install git autoconf libssl-dev libcurl4-openssl-dev
-```
+# Autostart the miner
 
-Une fois fait, il est possible de faire la compilation
+## Create the miner script
+
+We will now create the script to start mining for you. Nothing complicated here since you should already have the miner installed.
+
+Create a file in the mining folder and put in it the command :
 
 ```
-git clone https://github.com/krnlx/ccminer-skunk-krnlx.git
-cd ccminer-skunk-krnlx
-./autoconf
-./configure
-make
+cd ~/mining
 ```
 
-Si chacune de ces étapes s'est déroulée sans erreur, le binaire ccminer devrait être disponible dans le dossier actuel.
-
-Pour tester la compilation, vous pouvez utiliser :
-
 ```
-#exemple sur skunkhash & la pool aikapool, choisissez en fonction de votre pool évidemment
-./ccminer -a skunk -o stratum+tcp://stratum.aikapool.com:7939 -u unuser.unrig -p unmotdepasse --api-bind=0.0.0.0:4068
+nano mine.sh
 ```
 
-Notez la présence du api-bind=0.0.0.0:4068 pour pouvoir utiliser des utilitaires de monitoring réseau !
-
-# Ecrans virtuels pour chaque GPU
-
-## Initial
-
-Pour modifier la configuration actuelle xorg.conf
+And write, for instance ethminer - note that you must change the values in this file to represent your own wallet, miner name, etc...
 
 ```bash
-sudo nvidia-xconfig -a --allow-empty-initial-configuration --cool-bits=28 --use-display-device="DFP-0" --connected-monitor="DFP-0"
+
+#!/bin/bash
+
+ETHMINER=/usr/bin/ethminer
+ETH_POOL=http://etc-eu1.nanopool.org:18888
+ETH_ADDRESS=0xYOUMUSTPUTYOURWALLETADDRESSHERE
+ETH_RIG_NAME=anameforyourrig
+ETH_MAIL=youremail@some.domain
+API_PORT=3333
+
+$ETHMINER -F $ETH_POOL/$ETH_ADDRESS/$ETH_RIG_NAME/$ETH_MAIL -U --api-port $API_PORT
 ```
 
-## Vérification de la config
-
-En éditant le fichier /etc/X11/xorg.conf, vérifier la présence de :
-```
-Section "Device"
-    Identifier     "Device0"
-    Driver         "nvidia"
-    VendorName     "NVIDIA Corporation"
-    BoardName      "GeForce GTX 1060 3GB"
-    BusID          "PCI:1:0:0"
-    Option         "Coolbits" "28"
-EndSection
-```
-
-A noter qu'il faut autant de bloc Section "Device" que de gpu (Identifier "DeviceX"). (idem concernant Screen)
-L'option "Coolbits" va permettre de règler les GPU avec les outils nvidia par la suite
-
-# Installation de Circus si absent
-
-Circus est un programme de gestion de processus comme peut l'être systemd par exemple. Il possède l'avantage d'être extrêmement léger et simple de configuration.
-
-L'installation de se faisant par le python packet manager (en fonction des OS, ici Ubuntu):
-```
-#python < 3
-sudo apt-get install python-pip
-
-#python3+
-sudo apt-get install python3-pip
-```
-
-Puis l'installation de circus :
-```
-sudo pip install circus
-```
-
-Pour l'instant, Circus ne démarre pas automatiquement, dans les étapes suivantes, un fichier de configuration pour systemd sera écrit ainsi que tout le processus de démarrage du mineur choisi.
-
-# Démarrage automatique du mineur
-
-En créant & éditant le fichier /etc/circus/circus.ini :
-```
-[circus]
-check_delay = 5
-endpoint = tcp://127.0.0.1:5555
-pubsub_endpoint = tcp://127.0.0.1:5556
-statsd = true
-
-#création du bloc du watcher de processus
-[watcher:miner]
-working_dir = /home/someuser/
-cmd = /home/someuser/mine.sh
-numprocesses = 1
-autostart = true
-send_hup = true
-
-# création d'un log de sortie standard
-stdout_stream.class = FileStream
-stdout_stream.filename = /var/log/miner.output.log
-stdout_stream.max_bytes = 10737418
-stdout_stream.backup_count = 1
-
-#création d'un log de sortie erreur
-stderr_stream.class = FileStream
-stderr_stream.filename = /var/log/miner.error.log
-stderr_stream.max_bytes = 10737418
-stderr_stream.backup_count = 1
-```
-
-A noter que la ligne
-```
-cmd = /home/someuser/mine.sh
-```
-
-fait référence à un script mine.sh dans le dossier racine de l'utilisateur someuser.
-A modifier en fonction.
-
-Si votre script n'est qu'un onelinecode. e.g.
-```
-ethminer -F https://somesite:8888/address/rig_name -U
-```
-
-ou reprendre l'exemple plus haut avec ccminer. Tout est fonction de votre mineur !
-
-Vous pouvez utiliser la notation
-```
-cmd = ethminer
-args = -F https://somesite:8888/address/rig_name -U
-```
-
-En fonction de vos binaires, vous aurez peut-être besoin de passer des variables d'environnement à circus pour démarrer les processus dans de bonnes conditions.
-
-Dans ces cas-là, créez un bloc "env" et placez le au-dessus du bloc "watcher". Faites attention à donner le même nom de bloc. Dans l'exemple précédent, notez le "watcher:ethminer". On pourrait avoir alors :
+save and quit the file. And make it executable :
 
 ```
-[env:ethminer]
-LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64/:$LD_LIBRARY_PATH
+chmod +x mine.sh
+```
+## Testing it
 
-[watcher:ethminer]
-...
-...
+```
+./mine.sh
 ```
 
-A ce niveau, il ne reste qu'à s'assurer que circusd démarre au boot. En utilisant systemctl, s'assurer de la présence d'un script circusd.service dans le dossier /etc/systemd/system/
+You should see your miner starting, if everything is fine and run smoothly, you can proceed to the automation.
 
-Qui doit contenir :
+Copy the miner script into a more appropriate place :
+
+```
+sudo cp ~/mining/mine.sh /usr/local/bin/
+```
+
+## Start the miner in a service
+
+### Creating the service
+
+We will create a simple service for now :
+
+```
+sudo nano /etc/systemd/system/miner.service
+```
 
 ```
 [Unit]
-Description=Circus process manager
+Description=Miner service
 After=syslog.target network.target nss-lookup.target
 
 [Service]
 Type=simple
-ExecReload=/usr/local/bin/circusctl reload
-ExecStart=/usr/local/bin/circusd /etc/circus/circus.ini
+WorkingDir=/usr/local
+ExecStart=/usr/local/bin/mine.sh
 Restart=always
 RestartSec=5
 
@@ -217,6 +117,15 @@ RestartSec=5
 WantedBy=default.target
 ```
 
+### Starting the service
+
+```
+# enabling the service
+sudo systemctl enable miner.service
+
+# starting it !
+sudo systemctl start miner.service
+```
 
 # Script d'overclocking
 
