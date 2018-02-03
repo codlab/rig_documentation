@@ -106,6 +106,14 @@ You can now head back to the main [README.md](README.md)
 
 - check the logs for possible UEFI incompatibilities !
 
+### unable to locate the kernel sources
+
+Thise error can be common when installing the cuda toolkit, if it happens :
+
+```
+sudo apt-get install dkms build-essential linux-headers-generic
+```
+
 ## Deprecated info
 
 Here are some infos (in french) which will be removed in a future version :
